@@ -1,4 +1,58 @@
-function initialize() {
+var countryChanged = function (e) {
+  updateMap(e.target.value);
+};
+
+var updateMap = function (country) {
+
+  if (border !== undefined) {
+    border.setMap(null);
+  }
+
+  var borders = _(data[country]).map(function (borderLines) {
+    var borderLine = borderLines[0];
+    return borderLine.map(function (latLng) {
+      return new google.maps.LatLng(latLng[1], latLng[0]);
+    });
+  });
+
+  border = new google.maps.Polygon({
+    paths: borders,
+    strokeColor: "#000",
+    strokeOpacity: 1,
+    strokeWeight: 1,
+    fillColor: '#555555',
+    fillOpacity: 1
+  });
+  border.setMap(map);
+
+
+  geocoder.geocode( { 'address': country}, function(results, status) {
+    if (status == google.maps.GeocoderStatus.OK) {
+      map.setCenter(results[0].geometry.location);
+      map.fitBounds(results[0].geometry.bounds);
+    } else {
+      alert("Geocode was not successful for the following reason: " + status);
+    }
+  });
+
+};
+
+var map;
+var border;
+var geocoder;
+
+var initialize = function () {
+
+  var INIT_COUNTRY = 'China';
+
+  var selector = document.getElementById('selector');
+  for (var country in data) {
+    var option = document.createElement('option');
+    option.innerText = country;
+    selector.appendChild(option);
+  }
+  selector.value = INIT_COUNTRY;
+  selector.onchange = countryChanged;
 
   var styles = [
     {featureType: "all", stylers: [{ color: "#888888" }]},
@@ -15,47 +69,13 @@ function initialize() {
     disableDefaultUI: true,
     mapTypeControlOptions: {mapTypeIds: ['map_style']}
   };
-  var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+
+  map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
   map.mapTypes.set('map_style', styledMap);
   map.setMapTypeId('map_style');
 
-  var borders = _(data.China).map(function (dots) {
-    return dots.map(function (dot) {
-      return new google.maps.LatLng(dot[0], dot[1]);
-    });
-  });
+  geocoder = new google.maps.Geocoder();
 
-  // borders.each(function (index) {
-  //   var marker = new google.maps.Marker({
-  //       position: this,
-  //       map: map
-  //   });
-  //   var infowindow = new google.maps.InfoWindow({
-  //       content: index.toString() + ': ' + this.lat() + ', ' + this.lng()
-  //   });
-  //   google.maps.event.addListener(marker, 'click', function() {
-  //     infowindow.open(map, marker);
-  //   });
-  // });
+  updateMap(INIT_COUNTRY);
 
-  var border = new google.maps.Polygon({
-    paths: borders,
-    strokeColor: "#000",
-    strokeOpacity: 1,
-    strokeWeight: 1,
-    fillColor: '#555555',
-    fillOpacity: 0.8
-  });
-  border.setMap(map);
-
-  var geocoder = new google.maps.Geocoder();
-  geocoder.geocode( { 'address': 'China'}, function(results, status) {
-    if (status == google.maps.GeocoderStatus.OK) {
-      map.setCenter(results[0].geometry.location);
-      map.fitBounds(results[0].geometry.bounds);
-    } else {
-      alert("Geocode was not successful for the following reason: " + status);
-    }
-  });
-
-}
+};
